@@ -10,4 +10,6 @@
 сводку по исследованию написанных программ.
 
 # Смотреть результат
-[report.md](./report.md)
+[Lab1.md](./report_lab1.md)
+[Lab2.md](./report_lab2.md)
+[Lab3.md](./report_lab3.md)
