@@ -11,5 +11,9 @@
 
 # Смотреть результат
 [Lab1.md](./report_lab1.md)
+
 [Lab2.md](./report_lab2.md)
+
 [Lab3.md](./report_lab3.md)
+
+[Lab4.md](./report_lab4.md)
