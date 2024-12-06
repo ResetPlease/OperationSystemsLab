@@ -1,8 +1,6 @@
 #include <iostream>
 #include <map>
 #include <vector>
-#include <thread>
-#include <mutex>
 #include <string>
 #include <sstream>
 #include <zmq.hpp>
@@ -12,11 +10,8 @@
 
 std::map<int, std::string> nodes; // id -> адрес узла (tcp://localhost:port)
 std::map<int, bool> available;   // id -> доступность
-std::mutex nodes_mutex;
 
 void create_node(int id, int parent = -1) {
-    std::lock_guard<std::mutex> lock(nodes_mutex);
-
     if (nodes.count(id)) {
         std::cout << "Error: Already exists" << std::endl;
         return;
@@ -32,7 +27,7 @@ void create_node(int id, int parent = -1) {
         return;
     }
     if (pid == 0) {
-        std::string port = std::to_string(5550 + id); // Привязка к уникальному порту
+        std::string port = std::to_string(5550 + id);
         execlp("./node", "./node", std::to_string(id).c_str(), port.c_str(), NULL);
         exit(0);
     }
@@ -44,8 +39,6 @@ void create_node(int id, int parent = -1) {
 }
 
 void exec_command(int id, const std::vector<int>& params) {
-    std::lock_guard<std::mutex> lock(nodes_mutex);
-
     if (!nodes.count(id) || !available[id]) {
         std::cout << "Error:" << id << ": Node is unavailable" << std::endl;
         return;
@@ -56,7 +49,6 @@ void exec_command(int id, const std::vector<int>& params) {
         zmq::socket_t socket(context, zmq::socket_type::req);
         socket.connect(nodes[id]);
 
-        // Формирование команды
         std::ostringstream oss;
         oss << "exec ";
         for (const auto& param : params) {
@@ -68,7 +60,6 @@ void exec_command(int id, const std::vector<int>& params) {
         memcpy(request.data(), command.c_str(), command.size());
         socket.send(request, zmq::send_flags::none);
 
-        // Получение ответа
         zmq::message_t reply;
         socket.recv(reply, zmq::recv_flags::none);
         std::string result(static_cast<char*>(reply.data()), reply.size());
@@ -81,8 +72,6 @@ void exec_command(int id, const std::vector<int>& params) {
 }
 
 void pingall() {
-    std::lock_guard<std::mutex> lock(nodes_mutex);
-
     std::vector<int> unreachable;
     for (auto& [id, address] : nodes) {
         try {
@@ -99,7 +88,6 @@ void pingall() {
             zmq::message_t reply;
             zmq::recv_result_t bytes = socket.recv(reply, zmq::recv_flags::none);
             if (!bytes) {
-                // Если не получили ответ (таймаут или ошибка)
                 std::cout << "Unreachable " << id << std::endl;
                 unreachable.push_back(id);
             } else {
